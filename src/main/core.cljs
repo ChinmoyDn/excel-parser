@@ -4,21 +4,21 @@
           ["read-excel-file" :as xl]))
 
 (defonce test-q (r/atom {}))
-
 (defn handle-data [[col-names & rows]]
   (map #(zipmap col-names %) rows))
 
 (defn handle-input-change [file]
   (-> (xl file)
       (.then
-        #(->> %
-              handle-data
-              (reset! test-q)))))
+       #(->> %
+             handle-data
+             (into [])
+             (reset! test-q)))))
 
 (defn options
   "render the options"
   [a1 a2 a3 a4]
-  [:ol.mt-2.leading-tight.break-inside-avoid.break-before-all {:style {:list-style-type "lower-alpha"}}
+  [:ol.mt-2.ml-4.break-inside-avoid.break-before-all {:style {:list-style-type "lower-alpha"}}
    [:li a1]
    [:li a2]
    [:li a3]
@@ -33,31 +33,32 @@
     a4  "AnswerOption4"
     ans "CorrectAnswer1*" :as question-map}
    index]
-  [:li.mb-8
-   [:p.whitespace-break-spaces.leading-snug.break-inside-avoid.break-before-all q]
+  [:li.mb-8.whitespace-break-spaces.break-inside-avoid.break-before-all.leading-tight
+   [:p q]
    [options a1 a2 a3 a4]])
 
-
 (defn questions [q-list]
-  (into [:ol.columns-2.gap-8.list-decimal]
+  (into [:ol.columns-2.gap-8.list-decimal.hyphens-auto]
         (for [i (range (count q-list))]
           ^{:key i} [question (nth q-list i) i])))
 
 (defn file-uploader
   "file upload"
   []
-  [:label.print:hidden "Upload Excel file"]
-  [:input.print:hidden {:type      "file"
-                   :id        "file-input"
-                   :accept    ".xls, .xlsx"
-                   :on-change #(handle-input-change (first (.-files (.-target %))))}])
+  [:label "Upload Excel file"]
+  [:input {:type      "file"
+           :id        "file-input"
+           :accept    ".xls, .xlsx"
+           :on-change #(handle-input-change (first (.-files (.-target %))))}])
 
 (defn paper-title []
-  [:h3.text-center.text-lg.font-bold (get-in @test-q [1 "Metadata*"])])
+  [:h3
+   {:class "text-center mb-4 w-11/12 text-lg font-bold"}
+   (get-in @test-q [1 "Metadata*"])])
 
 (defn home []
-  [:div.container.max-w-screen-xl.mx-auto.p-4.text-base
-   [file-uploader]
+  [:div.container.max-w-screen-xl.mx-auto.px-8.py-4.text-base
+   [:div.print:hidden [file-uploader]]
    [paper-title]
    [questions @test-q]])
 
@@ -65,13 +66,14 @@
   (let [app-node (.getElementById js/document "app")]
     (rdom/render [home] app-node)))
 
-
 (main)
 
 (comment
-  (js/alert "hi") 
+  (js/alert "hi")
   (.clear js/console)
   (print (nth @test-q 5))
-  (js/console.log "hi there!") 
+  (js/console.log "hi there!")
+  (print (get (nth @test-q 1) "Metadata*"))
+  (print (get-in @test-q [1 "Metadata*"]))
 ;
   )

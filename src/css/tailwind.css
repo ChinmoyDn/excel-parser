@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
+html{
+  font-size: 18px;
+}
+body{
+  font-family: 'EB Garamond', serif;
+}
+
+@media print {
+  html{
+    font-size: 14px;
+  }
+  @page{
+    size: A4 portrait;
+  }
+}

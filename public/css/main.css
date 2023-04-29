@@ -513,11 +513,39 @@ video {
   margin-left: auto;
   margin-right: auto;
 }
+.my-4 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
 .mb-8 {
   margin-bottom: 2rem;
 }
+.ml-4 {
+  margin-left: 1rem;
+}
 .mt-2 {
   margin-top: 0.5rem;
+}
+.ml-12 {
+  margin-left: 3rem;
+}
+.ml-2 {
+  margin-left: 0.5rem;
+}
+.ml-0 {
+  margin-left: 0px;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mr-8 {
+  margin-right: 2rem;
+}
+.w-5\/6 {
+  width: 83.333333%;
+}
+.w-11\/12 {
+  width: 91.666667%;
 }
 .max-w-screen-xl {
   max-width: 1280px;
@@ -540,11 +568,32 @@ video {
 .gap-8 {
   gap: 2rem;
 }
+.hyphens-auto {
+  -webkit-hyphens: auto;
+          hyphens: auto;
+}
 .whitespace-break-spaces {
   white-space: break-spaces;
 }
 .p-4 {
   padding: 1rem;
+}
+.px-8 {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+.pr-4 {
+  padding-right: 1rem;
+}
+.pr-8 {
+  padding-right: 2rem;
+}
+.pr-12 {
+  padding-right: 3rem;
 }
 .text-center {
   text-align: center;
@@ -566,8 +615,23 @@ video {
 .leading-tight {
   line-height: 1.25;
 }
-@media print {
 
+
+
+html{
+  font-size: 18px;
+}
+body{
+  font-family: 'EB Garamond', serif;
+}
+
+@media print {
+  html{
+    font-size: 14px;
+  }
+  @page{
+    size: A4 portrait;
+  }
   .print\:hidden {
     display: none;
   }
