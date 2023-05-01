@@ -5,19 +5,21 @@
           ["read-excel-file" :as xl]))
 ;; map of column names in the excel to keys
 (def qk {:q-text "QuestionText*"
-         :a1 "AnswerOption1*"
-         :a2 "AnswerOption2*"
-         :a3  "AnswerOption3"
-         :a4 "AnswerOption4"
+         :a "AnswerOption1*"
+         :b "AnswerOption2*"
+         :c  "AnswerOption3"
+         :d "AnswerOption4"
          :ans "CorrectAnswer1*"
          })
+
+(def opt-labels [:a :b :c :d])
 
 (enable-console-print!)
 (defonce q-hash-map (r/atom {}))
 
 (defonce app-state (r/atom {:preview? true :shuffled? false}))
 
-(defn handle-data-map [[col-names & rows]]
+(defn handle-quesiton-bank! [[col-names & rows]]
   (zipmap (range)
           (map-indexed #(assoc (zipmap col-names %2) :idx %1)
                        rows)))
@@ -26,47 +28,65 @@
   (-> (xl file)
       (.then
        #(->> %
-             handle-data-map
+             handle-quesiton-bank!
              (reset! q-hash-map)))))
 
-(defn update-question! [state q i]
-  (swap! state assoc-in [i (:q-text qk)] q))
+(defn update-quesiton-and-ans! [state q i key-name]
+  (swap! state assoc-in [i (get qk key-name)] q))
 
 (defn handle-edit-question
   [[q idx]]
-  (update-question! q-hash-map q  idx)
-   nil)
+  (update-quesiton-and-ans! q-hash-map q idx :q-text)
+  nil)
+
+(defn handle-edit-answer
+  [{:keys [text opt-idx q-idx correct-ans]}]
+  (update-quesiton-and-ans! q-hash-map text q-idx (get opt-labels opt-idx))
+  (when correct-ans
+    (update-quesiton-and-ans! q-hash-map text q-idx (get qk :ans))))
+
+(defn option
+  [text q-idx opt-idx correct-ans]
+  [:li>p
+   {:content-editable (if (:preview? @app-state) "true" "false")
+    :on-blur #(handle-edit-answer  {:text (-> % .-target .-innerText) :opt-idx opt-idx :q-idx q-idx :correct-ans? (= text correct-ans)})
+    :suppress-content-editable-warning true
+    :class (str "py-0.5 " (when (:preview? @app-state) "bg-gray-100 hover:bg-gray-200 p-2"))}
+   (str text (when
+              (and
+               (= text correct-ans)
+               (:preview? @app-state)) " *"))])
+
 
 (defn options
   "render the options"
-  [a1 a2 a3 a4]
-  [:ol.mt-2.ml-4.break-inside-avoid.break-before-all {:style {:list-style-type "lower-alpha"}}
-   [:li a1]
-   [:li a2]
-   [:li a3]
-   [:li a4]])
-
+  [{:keys [idx opts ans]}]
+  (js/console.log opts)
+  (into  [:ol.mt-2.ml-4.break-inside-avoid.break-before-all {:style {:list-style-type "lower-alpha"}}
+          (doall
+           (for [opt-idx (range (count opts))]
+             ^{:key opt-idx} [option (get opts opt-idx) idx opt-idx ans]))]))
 
 (defn question
   "render a single quesiton with options"
   [{q  (:q-text qk)
-    a1 (:a1 qk)
-    a2 (:a2 qk)
-    a3 (:a3 qk)
-    a4 (:a4 qk)
+    a (:a qk)
+    b (:b qk)
+    c (:c qk)
+    d (:d qk)
     idx :idx
     ans (:ans qk) :as question-map}]
   [:li.mb-8.whitespace-break-spaces.break-inside-avoid.break-before-all.leading-tight
    [:div.relative
     (when (:preview? @app-state)
-      [:span.print-hidden.absolute.right-1.top-1.rotate-90
+      [:span.print:hidden.absolute.right-1.top-1.rotate-90
        (gstring/unescapeEntities "&#9998;")])
     [:p {:content-editable (if (:preview? @app-state) "true" "false")
          :on-blur #(handle-edit-question  [(-> % .-target .-innerText) idx])
          :suppress-content-editable-warning true
-         :class (str "p-2 " (when (:preview? @app-state) "bg-gray-100 hover:bg-gray-200 rounded"))}
+         :class (str "px-2" (when (:preview? @app-state) "bg-gray-100 hover:bg-gray-200 rounded p-2"))}
      q]]
-   [options a1 a2 a3 a4]])
+   [options {:opts [a b c d] :idx idx :ans ans}]])
 
 (defn questions [q-list]
   (into [:ol.columns-2.gap-8.list-decimal.hyphens-auto]
@@ -81,18 +101,20 @@
   [:input {:type      "file"
            :id        "file-input"
            :accept    ".xls, .xlsx"
-           :on-change #(handle-input-change (first (.-files (.-target %))))}])
+           :placeholder "Upload xls/xlsx file"
+           :on-change #(handle-input-change (-> % .-target .-files first))
+           :class "text-sm text-gray-900 cursor-pointer focus:outline-none"}])
 
 (defn action-btn
   []
   [:button  {:on-click #(swap! app-state assoc :preview? (not (:preview? @app-state)))
-             :class "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"}
+             :class "bg-blue-500 hover:bg-blue-700 text-white py-1 px-4 rounded text-sm"}
    (if (:preview? @app-state) "Shuffle" "Re-Order")])
 
 (defn action-toolbar
   "the top toolbar placeholder for file upload and other actions"
   []
-  [:div [file-uploader] [action-btn]])
+  [:div.my-2.flex.gap-1.5.justify-between.items-center [file-uploader] [action-btn]])
 
 (defn paper-title []
   [:h3
@@ -115,9 +137,10 @@
 (comment
   (js/alert "hi")
   (.clear js/console)
-  (print @q-hash-map)
+  (js/console.log @q-hash-map)
   (:preview? @app-state)
   (print @app-state)
+
 ;
   )
 
