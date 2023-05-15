@@ -16,8 +16,9 @@
 
 (enable-console-print!)
 (defonce q-hash-map (r/atom {}))
+(defonce shuffled-q-map (r/atom {}))
 
-(defonce app-state (r/atom {:preview? true :shuffled? false}))
+(defonce app-state (r/atom {:preview? true :show-ans? false}))
 
 (defn handle-quesiton-bank! [[col-names & rows]]
   (zipmap (range)
@@ -29,7 +30,9 @@
       (.then
        #(->> %
              handle-quesiton-bank!
-             (reset! q-hash-map)))))
+             (reset! q-hash-map)
+             shuffle 
+             (reset! shuffled-q-map)))))
 
 (defn update-quesiton-and-ans! [state q i key-name]
   (swap! state assoc-in [i (get qk key-name)] q))
@@ -45,6 +48,9 @@
   (when correct-ans
     (update-quesiton-and-ans! q-hash-map text q-idx (get qk :ans))))
 
+(defn toggle [key-name]
+  (swap! app-state assoc key-name (not (get @app-state key-name))))
+
 (defn option
   [text q-idx opt-idx correct-ans]
   [:li>p
@@ -55,13 +61,12 @@
    (str text (when
               (and
                (= text correct-ans)
-               (:preview? @app-state)) " *"))])
+               (:show-ans? @app-state)) " *"))])
 
 
 (defn options
   "render the options"
   [{:keys [idx opts ans]}]
-  (js/console.log opts)
   (into  [:ol.mt-2.ml-4.break-inside-avoid.break-before-all {:style {:list-style-type "lower-alpha"}}
           (doall
            (for [opt-idx (range (count opts))]
@@ -75,7 +80,7 @@
     c (:c qk)
     d (:d qk)
     idx :idx
-    ans (:ans qk) :as question-map}]
+    ans (:ans qk)}]
   [:li.mb-8.whitespace-break-spaces.break-inside-avoid.break-before-all.leading-tight
    [:div.relative
     (when (:preview? @app-state)
@@ -105,16 +110,27 @@
            :on-change #(handle-input-change (-> % .-target .-files first))
            :class "text-sm text-gray-900 cursor-pointer focus:outline-none"}])
 
-(defn action-btn
+(defn action-btns
   []
-  [:button  {:on-click #(swap! app-state assoc :preview? (not (:preview? @app-state)))
-             :class "bg-blue-500 hover:bg-blue-700 text-white py-1 px-4 rounded text-sm"}
-   (if (:preview? @app-state) "Shuffle" "Re-Order")])
+  (when-not (empty? @q-hash-map)
+    [:div.flex.gap-4.items-center
+     [:div.flex.items-center
+      [:input {:checked (get @app-state :show-ans?)
+               :type "checkbox"
+               :id "show-ans"
+               :on-change #(toggle :show-ans?)}]
+      [:label.ml-1.hover:cursor-pointer {:for "show-ans"} "Show answers"]]
+     [:button  {:on-click #(swap! app-state assoc :preview? (not (:preview? @app-state)))
+                :class "bg-blue-500 hover:bg-blue-700 text-white py-1 px-4 rounded text-sm"}
+      (if (:preview? @app-state) "Shuffle" "Re-Order")]
+     [:button  {:on-click #(js/window.print)
+                :class "bg-blue-500 hover:bg-blue-700 text-white py-1 px-4 rounded text-sm"}
+      "Save as PDF"]]))
 
 (defn action-toolbar
   "the top toolbar placeholder for file upload and other actions"
   []
-  [:div.my-2.flex.gap-1.5.justify-between.items-center [file-uploader] [action-btn]])
+  [:div.my-2.flex.gap-1.5.justify-between.items-center [file-uploader] [action-btns]])
 
 (defn paper-title []
   [:h3
@@ -126,7 +142,7 @@
     [:div.container.max-w-screen-xl.mx-auto.px-8.py-4.text-base
      [:div.print:hidden [action-toolbar]]
      [paper-title]
-     [questions (if-not (:preview? @app-state) (shuffle q-list) q-list)]]))
+     [questions (if-not (:preview? @app-state) (vals @shuffled-q-map) q-list)]]))
 
 (defn main []
   (let [app-node (.getElementById js/document "app")]
@@ -135,12 +151,13 @@
 (main)
 
 (comment
-  (js/alert "hi")
+  (js/alert "hi") 
   (.clear js/console)
-  (js/console.log @q-hash-map)
-  (:preview? @app-state)
-  (print @app-state)
-
+  (js/console.log (empty? {}))
+  (print @q-hash-map)
+  (:preview? @app-state) 
+  (print @app-state) 
+  (swap! app-state assoc :show-ans? true)
 ;
   )
 
